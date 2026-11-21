@@ -1,0 +1,331 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KJBM MINDS X</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#101010;color:white;
+ font-family:Arial,sans-serif;
+}
+:root{--gold:#d4af37;--panel:#1c1c1c}
+header{
+ background:#080808;padding:20px;
+ border-bottom:2px solid var(--gold);
+ text-align:center;
+}
+header h1{color:var(--gold);margin:0}
+header p{color:#bbb;margin:7px}
+nav{
+ display:flex;flex-wrap:wrap;justify-content:center;
+ background:#181818;gap:5px;padding:10px;
+ position:sticky;top:0;z-index:5;
+}
+button{
+ background:var(--gold);color:#111;border:0;
+ padding:11px 15px;border-radius:6px;
+ font-weight:bold;cursor:pointer;
+}
+nav button{background:#292929;color:white}
+nav button:hover,nav button.active{background:var(--gold);color:#111}
+main{max-width:950px;margin:auto;padding:18px}
+.panel{
+ background:var(--panel);padding:20px;
+ border:1px solid #383838;border-radius:12px;
+ margin:15px 0;
+}
+h2,h3{color:var(--gold)}
+input,textarea{
+ display:block;width:100%;padding:12px;
+ margin:10px 0;background:#292929;color:white;
+ border:1px solid #555;border-radius:6px;
+}
+textarea{min-height:100px;resize:vertical}
+.hidden{display:none!important}
+.muted{color:#aaa;font-size:14px}
+.gold{color:var(--gold)}
+.post{
+ background:#222;padding:15px;border-radius:10px;
+ margin:15px 0;border:1px solid #444;
+}
+.post img,.post video{
+ max-width:100%;max-height:420px;
+ display:block;margin:12px auto;border-radius:8px;
+}
+.post a{color:var(--gold);overflow-wrap:anywhere}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1}
+footer{
+ text-align:center;color:#999;padding:25px;
+ border-top:1px solid #444;margin-top:30px;
+}
+#status{color:var(--gold);padding:8px}
+</style>
+</head>
+
+<body>
+<header>
+<h1>KJBM MINDS X</h1>
+<p>Connect • Share • Learn • Grow</p>
+</header>
+
+<nav>
+<button onclick="showPage('home')">Home</button>
+<button onclick="showPage('community')">Community</button>
+<button onclick="showPage('news')">News</button>
+<button onclick="showPage('account')">My Account</button>
+<button onclick="showPage('about')">About</button>
+</nav>
+
+<main>
+<div id="status"></div>
+
+<section id="home" class="page">
+<div class="panel">
+<h2>Welcome to KJBM MINDS X</h2>
+<p>A place to connect, share ideas, learn and grow together.</p>
+<p id="welcomeText">Join our community and become part of something great.</p>
+<button onclick="showPage('account')">Join / Sign In</button>
+</div>
+<div class="panel">
+<h2>Our Community</h2>
+<p>Share knowledge, news, pictures, videos and useful documents.</p>
+</div>
+</section>
+
+<section id="account" class="page hidden">
+<div class="panel" id="authPanel">
+<h2>Sign In</h2>
+<input id="loginEmail" type="email" placeholder="Email address">
+<input id="loginPassword" type="password" placeholder="Password">
+<button onclick="signIn()">Sign In</button>
+<hr>
+<h2>Create Account</h2>
+<input id="regName" placeholder="Your display name">
+<input id="regEmail" type="email" placeholder="Email address">
+<input id="regPassword" type="password" placeholder="Create password (at least 6 characters)">
+<button onclick="register()">Register</button>
+<p class="muted">Use an email address you control. Never share your password.</p>
+</div>
+
+<div class="panel hidden" id="userPanel">
+<h2>My Dashboard</h2>
+<p id="userName"></p>
+<p id="userEmail" class="muted"></p>
+<button onclick="signOut()">Sign Out</button>
+</div>
+</section>
+
+<section id="community" class="page hidden">
+<div class="panel">
+<h2>Community Posts</h2>
+<p class="muted">Sign in to publish a post or share a file.</p>
+<div id="createPost" class="hidden">
+<textarea id="postText" placeholder="What would you like to share?"></textarea>
+<label>Select a picture, video or document:</label>
+<input id="postFile" type="file"
+accept="image/*,video/*,.pdf,.doc,.docx,.txt">
+<p class="muted">File uploads will work after we configure free media storage.</p>
+<button onclick="publishPost()">Publish Post</button>
+</div>
+</div>
+<div id="posts">
+<p class="muted">Loading community posts...</p>
+</div>
+</section>
+
+<section id="news" class="page hidden">
+<div class="panel">
+<h2>News & Announcements</h2>
+<p>Welcome to the KJBM MINDS X announcements section.</p>
+<div id="newsPosts"></div>
+</div>
+</section>
+
+<section id="about" class="page hidden">
+<div class="panel">
+<h2>About KJBM MINDS X</h2>
+<p>KJBM MINDS X is a community platform for sharing knowledge,
+ideas, pictures, videos and documents.</p>
+<h3>Our Vision</h3>
+<p>To connect people and encourage learning, creativity and collaboration.</p>
+</div>
+</section>
+</main>
+
+<footer>
+<p>© 2026 KJBM MINDS X. All rights reserved.</p>
+<p>Connect • Share • Learn • Grow</p>
+</footer>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+// YOUR EXISTING KJBM MINDS FIREBASE PROJECT
+const firebaseConfig = {
+ apiKey: "AIzaSyBq41YUdJcsDUHNtBpEdv7JdF5D87dYp6k",
+ authDomain: "kjbm-minds.firebaseapp.com",
+ projectId: "kjbm-minds",
+ storageBucket: "kjbm-minds.firebasestorage.app",
+ messagingSenderId: "227909064382",
+ appId: "1:227909064382:web:a4043372a84819ca5a70ef",
+ measurementId: "G-D1FZF634W1"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUser = null;
+let unsubscribePosts = null;
+
+function status(message){
+ document.getElementById("status").textContent=message;
+}
+
+function showPage(page){
+ document.querySelectorAll(".page").forEach(p=>p.classList.add("hidden"));
+ document.getElementById(page).classList.remove("hidden");
+ if(page==="community")loadPosts();
+ if(page==="news")loadNews();
+ window.scrollTo(0,0);
+}
+
+function showUser(){
+ const loggedIn=!!currentUser;
+ document.getElementById("authPanel").classList.toggle("hidden",loggedIn);
+ document.getElementById("userPanel").classList.toggle("hidden",!loggedIn);
+ document.getElementById("createPost").classList.toggle("hidden",!loggedIn);
+
+ if(loggedIn){
+  document.getElementById("userName").textContent="Welcome, "+(currentUser.displayName||"Member");
+  document.getElementById("userEmail").textContent=currentUser.email;
+  document.getElementById("welcomeText").textContent="Welcome back, "+(currentUser.displayName||"Member")+"!";
+ }else{
+  document.getElementById("welcomeText").textContent="Join our community and become part of something great.";
+ }
+}
+
+async function register(){
+ const name=document.getElementById("regName").value.trim();
+ const email=document.getElementById("regEmail").value.trim();
+ const password=document.getElementById("regPassword").value;
+
+ if(!name||!email||password.length<6){
+  status("Enter your name, a valid email and a password of at least 6 characters.");
+  return;
+ }
+ try{
+  const result=await auth.createUserWithEmailAndPassword(email,password);
+  await result.user.updateProfile({displayName:name});
+  await db.collection("users").doc(result.user.uid).set({
+   name:name,email:email,createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  status("Account created successfully!");
+ }catch(e){status(e.message);}
+}
+
+async function signIn(){
+ const email=document.getElementById("loginEmail").value.trim();
+ const password=document.getElementById("loginPassword").value;
+ try{
+  await auth.signInWithEmailAndPassword(email,password);
+  status("You are signed in!");
+ }catch(e){status(e.message);}
+}
+
+async function signOut(){
+ try{
+  await auth.signOut();
+  status("You have signed out.");
+ }catch(e){status(e.message);}
+}
+
+auth.onAuthStateChanged(user=>{
+ currentUser=user;
+ showUser();
+ if(document.getElementById("community").classList.contains("hidden")===false)loadPosts();
+});
+
+// Publish a text post.
+// File uploads are enabled after we configure a storage provider.
+async function publishPost(){
+ if(!currentUser){status("Please sign in first.");return;}
+ const text=document.getElementById("postText").value.trim();
+ const file=document.getElementById("postFile").files[0];
+
+ if(!text&&!file){status("Write a post or select a file.");return;}
+ if(file){
+  status("File uploads are not configured yet. We will set up free storage next.");
+  return;
+ }
+ try{
+  await db.collection("posts").add({
+   text:text,
+   author:currentUser.displayName||"Member",
+   uid:currentUser.uid,
+   type:"text",
+   createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  document.getElementById("postText").value="";
+  status("Your post has been published!");
+  loadPosts();
+ }catch(e){status(e.message);}
+}
+
+function loadPosts(){
+ const holder=document.getElementById("posts");
+ holder.innerHTML="<p class='muted'>Loading posts...</p>";
+ if(unsubscribePosts)unsubscribePosts();
+
+ unsubscribePosts=db.collection("posts")
+ .orderBy("createdAt","desc").limit(50)
+ .onSnapshot(snapshot=>{
+  holder.innerHTML="";
+  if(snapshot.empty){
+   holder.innerHTML="<p class='muted'>No posts yet. Be the first to share!</p>";
+   return;
+  }
+  snapshot.forEach(doc=>{
+   const p=doc.data();
+   const card=document.createElement("div");
+   card.className="post";
+   const author=document.createElement("strong");
+   author.textContent=p.author||"Member";
+   const content=document.createElement("p");
+   content.textContent=p.text||"";
+   card.append(author,content);
+   if(p.uid===currentUser?.uid){
+    const del=document.createElement("button");
+    del.textContent="Delete my post";
+    del.onclick=()=>deletePost(doc.id);
+    card.appendChild(del);
+   }
+   holder.appendChild(card);
+  });
+ },e=>{holder.textContent="Could not load posts: "+e.message;});
+}
+
+async function deletePost(id){
+ if(!currentUser)return;
+ if(!confirm("Delete this post?"))return;
+ try{
+  await db.collection("posts").doc(id).delete();
+  status("Post deleted.");
+ }catch(e){status(e.message);}
+}
+
+function loadNews(){
+ const holder=document.getElementById("newsPosts");
+ holder.innerHTML="<p class='muted'>Community news and announcements will appear here.</p>";
+}
+</script>
+</body>
+</html>
